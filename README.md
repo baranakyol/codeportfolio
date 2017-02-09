@@ -1,1 +1,1 @@
-#Sample coding work by Baran Akyol
+#Some sample coding work by Baran Akyol
