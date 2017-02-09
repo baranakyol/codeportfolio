@@ -1,0 +1,325 @@
+---
+title: "ba2500 Time Series Homework 4"
+author: "Baran Akyol"
+date: "November 7, 2016"
+output: html_document
+---
+
+
+```{r, include=FALSE}
+
+library("xts") #for time series
+library("nloptr") #for optimization
+library(zoo)
+library("dygraphs") #for plots
+library("magrittr") # pipes
+library(dplyr)
+#library(streamgraph)
+#library(viridis)
+
+library(quantmod)
+library(lattice)
+library(timeSeries)
+library(rugarch)
+
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+getSymbols("^GSPC", from="2004-01-01")
+
+```
+
+
+```{r}
+spReturns = diff(log(Cl(GSPC)))
+spReturns[as.character(head(index(Cl(GSPC)),1))] = 0
+```
+
+
+```{r}
+windowLength <- 500
+foreLength <- length(spReturns) - windowLength
+forecasts <- matrix(NA,foreLength+1,2)
+```
+
+
+
+```{r, eval=FALSE, include=FALSE}
+
+if (1==1)
+{
+  for (d in 0:foreLength) {
+    #2. Obtain the S&P500 rolling window for this day
+      spReturnsOffset = spReturns[(1+d):(windowLength+d)]
+  
+      #3. Fit the ARIMA model
+      final.aic <- Inf
+      final.order <- c(0,0,0)
+      for (p in 0:5) for (q in 0:5) {
+      #for (p in 1) for (q in 0) {
+          if ( p == 0 && q == 0) {
+              next
+          }
+  
+          arimaFit = tryCatch( arima(spReturnsOffset, order=c(p, 0, q)),
+                               error=function( err ) FALSE,
+                               warning=function( err ) FALSE )
+          #4. if we got the fit return update the AIC else move to the next model.
+          if( !is.logical( arimaFit ) ) {
+              current.aic <- AIC(arimaFit)
+              if (current.aic < final.aic) {
+                  final.aic <- current.aic
+                  final.order <- c(p, 0, q)
+                  final.arima <- arima(spReturnsOffset, order=final.order)
+              }
+          } else {
+              next
+          }
+      }
+  
+      #7. Specify the ARMA(p,q)-GARCH(1,1) model with Student-t innovations  to fit
+      spec = ugarchspec(
+          variance.model=list(garchOrder=c(1,1)),
+          mean.model=list(armaOrder=c(final.order[1], final.order[3]), include.mean=T),
+          distribution.model="std"
+      )
+      #8. Fit the ARMA(p,q)-GARCH(1,1) model
+      fit = tryCatch(
+        ugarchfit(
+          spec, spReturnsOffset, solver = 'hybrid'
+        ), error=function(e) e, warning=function(w) w
+      )
+  
+      #9. If the GARCH model does not converge, set the direction to "long" else
+      # choose the correct forecast direction based on the returns prediction
+      # Output the results to the screen and the forecasts vector
+      if(is(fit, "warning") || is(fit,"error") ) {
+        forecasts[d+1,1] = index(spReturnsOffset)[windowLength]
+        forecasts[d+1,2] = 1
+        print("warning or error")
+        print(paste(paste('Date: ',index(spReturnsOffset)[windowLength],sep=''), paste(' Signal = ',1,sep=''),paste(' Progress = ',paste(round(10000*d/foreLength)/100,'%',sep=''),sep=''), sep=";")) 
+      } else {
+        #10 compute the one-step-ahead forecast and store the trading decision {-1,1}
+        fore = ugarchforecast(fit, n.ahead=1)
+        ind = fore@forecast$seriesFor
+        forecasts[d+1,1] = index(spReturnsOffset)[windowLength]
+        forecasts[d+1,2] = ifelse(ind[1] < 0, -1, 1)
+        #print the date 
+        print(paste(paste('Date: ',index(spReturnsOffset)[windowLength],sep=''), paste(' Signal = ',ifelse(ind[1] < 0, -1, 1),sep=''),paste(' Progress = ',paste(round(10000*d/foreLength)/100,'%',sep=''),sep=''), sep=";")) 
+      }
+}
+
+write.csv(forecasts, file="forecasts.csv", row.names=FALSE,quote=FALSE)
+
+}
+``` 
+
+# Input the CSV file
+
+```{r}
+forecastcsv <-read.csv(file="/Users/mehmetyilmaz/Desktop/TSHW4/forecasts.csv", header=T, sep=",",dec = ".")
+
+
+
+spArimaGarch2 <- as.xts(forecastcsv$V2,order.by=as.Date(forecastcsv$V1))
+spArimaGarch2 <- lag(spArimaGarch2)
+
+
+```
+
+# Create the ARIMA+GARCH returns
+
+```{r}
+
+spIntersect         <- merge( spArimaGarch2[,1], spReturns)
+spArimaGarchReturns <- spIntersect[,1] * spIntersect[,2]
+
+```
+
+# Create the backtests for ARIMA+GARCH and Buy & Hold
+
+```{r}
+
+#merge the two time series of returns
+spCombined <-merge(spArimaGarchReturns,spIntersect[,2],all=F)
+
+#exclude NA and compute cumulative log-returns 
+spCombinedCurve   <-(1+cumsum(na.exclude(spCombined)))
+
+```
+
+# Plot the two time series of cumulative returns on one figure
+
+```{r}
+
+dygraph(spCombinedCurve) %>%
+  dyRangeSelector()  %>% 
+  dyOptions(axisLineWidth = 1.5, fillGraph = FALSE, drawGrid = FALSE, rightGap=50)
+
+```
+
+# --------------------------------------------------------------------------------------------
+```{r}
+getSymbols("AAPL",src='yahoo', from="2010-11-08")
+
+```
+
+
+
+```{r}
+AAPLReturns = diff(log(Ad(AAPL)))
+AAPLReturns[as.character(head(index(Ad(AAPL)),1))] = 0
+```
+
+
+
+```{r}
+windowLength <- 500
+foreLength <- length(AAPLReturns) - windowLength
+forecasts2 <- matrix(NA,foreLength+1,2)
+```
+
+
+```{r, eval=FALSE, include=FALSE}
+if (1==1)
+{
+  for (d in 0:foreLength) {
+
+    
+      AAPLReturnsOffset = AAPLReturns[(1+d):(windowLength+d)]
+  
+      #3. Fit the ARIMA model
+      final.aic <- Inf
+      final.order <- c(0,0,0)
+      for (p in 0:5) for (q in 0:5) {
+      #for (p in 1) for (q in 0) {
+          if ( p == 0 && q == 0) {
+              next
+          }
+  
+          arimaFit = tryCatch( arima(AAPLReturnsOffset, order=c(p, 0, q)),
+                               error=function( err ) FALSE,
+                               warning=function( err ) FALSE )
+          #4. if we got the fit return update the AIC else move to the next model.
+          if( !is.logical( arimaFit ) ) {
+              current.aic <- AIC(arimaFit)
+              if (current.aic < final.aic) {
+                  final.aic <- current.aic
+                  final.order <- c(p, 0, q)
+                  final.arima <- arima(AAPLReturnsOffset, order=final.order)
+              }
+          } else {
+              next
+          }
+      }
+  
+      #7. Specify the ARMA(p,q)-GARCH(1,1) model with Student-t innovations  to fit
+      spec = ugarchspec(
+          variance.model=list(garchOrder=c(1,1)),
+          mean.model=list(armaOrder=c(final.order[1], final.order[3]), include.mean=T),
+          distribution.model="std"
+      )
+      #8. Fit the ARMA(p,q)-GARCH(1,1) model
+      fit = tryCatch(
+        ugarchfit(
+          spec, AAPLReturnsOffset, solver = 'hybrid'
+        ), error=function(e) e, warning=function(w) w
+      )
+  
+      #9. If the GARCH model does not converge, set the direction to "long" else
+      # choose the correct forecast direction based on the returns prediction
+      # Output the results to the screen and the forecasts vector
+      if(is(fit, "warning") || is(fit,"error") ) {
+        forecasts2[d+1,1] = index(AAPLReturnsOffset)[windowLength]
+        forecasts2[d+1,2] = 1
+        print("warning or error")
+        print(paste(paste('Date: ',index(AAPLReturnsOffset)[windowLength],sep=''), paste(' Signal = ',1,sep=''),paste(' Progress = ',paste(round(10000*d/foreLength)/100,'%',sep=''),sep=''), sep=";")) 
+      } else {
+        #10 compute the one-step-ahead forecast and store the trading decision {-1,1}
+        fore = ugarchforecast(fit, n.ahead=1)
+        ind = fore@forecast$seriesFor
+        forecasts2[d+1,1] = index(AAPLReturnsOffset)[windowLength]
+        forecasts2[d+1,2] = ifelse(ind[1] < 0, -1, 1)
+        #print the date 
+        print(paste(paste('Date: ',index(AAPLReturnsOffset)[windowLength],sep=''), paste(' Signal = ',ifelse(ind[1] < 0, -1, 1),sep=''),paste(' Progress = ',paste(round(10000*d/foreLength)/100,'%',sep=''),sep=''), sep=";")) 
+      }
+}
+
+  
+write.csv(forecasts2, file="forecastsAAPL.csv", row.names=FALSE,quote=FALSE)
+
+}
+```
+
+# Input the AAPL CSV file
+
+```{r}
+forecastAAPLcsv <-read.csv(file="/Users/mehmetyilmaz/Desktop/TSHW4/forecastsAAPL.csv", header=T, sep=",",dec = ".")
+
+
+
+AAPLArimaGarch2 <- as.xts(forecastAAPLcsv$V2,order.by=as.Date(forecastAAPLcsv$V1))
+AAPLArimaGarch2 <- lag(AAPLArimaGarch2)
+
+
+```
+
+# Create the ARIMA+GARCH returns
+
+```{r}
+
+AAPLIntersect         <- merge( AAPLArimaGarch2[,1], AAPLReturns)
+AAPLArimaGarchReturns <- AAPLIntersect[,1] * AAPLIntersect[,2]
+
+```
+
+# Create the backtests for ARIMA+GARCH and Buy & Hold
+
+```{r}
+
+AAPLCombined <-merge(AAPLArimaGarchReturns,AAPLIntersect[,2],all=F)
+
+AAPLCombinedCurve   <-(1+cumsum(na.exclude(AAPLCombined)))
+
+
+```
+
+# Plot the two time series of cumulative returns on one figure
+
+```{r}
+
+dygraph(AAPLCombinedCurve) %>%
+  dyRangeSelector()  %>% 
+  dyOptions(axisLineWidth = 1.5, fillGraph = FALSE, drawGrid = FALSE, rightGap=50)
+
+```
+
+#Sharpe AAPL
+```{r}
+AAPLmean = apply(AAPLReturns,2,mean,na.rm=T)
+AAPLsd = apply(AAPLReturns,2,sd,na.rm=T)
+AAPLsharpe = sqrt(252)*AAPLmean/AAPLsd
+AAPLsharpe
+
+
+
+```
+
+#Sharpe S&P
+```{r}
+SPmean = apply(spReturns,2,mean,na.rm=T)
+SPsd = apply(spReturns,2,sd,na.rm=T)
+SPsharpe = sqrt(252)*SPmean/SPsd
+SPsharpe
+
+
+```
+
+```{r}
+
+
+
+```
+
+#

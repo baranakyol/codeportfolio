@@ -1,0 +1,309 @@
+---
+title: "Project for Statistical Inference and Time-Series Modeling Course"
+author: "Baran Akyol"
+date: "New York, `r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+rm(list = ls(all =TRUE))
+library("xts")
+library("nloptr")
+library(zoo)
+library("dygraphs")
+library(plotly)
+library("magrittr")
+library("webshot")
+require(plotrix)
+library(DescTools)
+library(PerformanceAnalytics)
+library(fBasics)
+library(forecast)
+
+```
+
+
+```{r,echo=F}
+##Load the APPLE data
+AAPL <- read.csv(paste0(getwd(),"/data/AAPL.txt"))
+```
+
+```{r,echo = F}
+## Convert the column with dates into Date format
+D <- as.Date(toString(AAPL[1,1]),'%Y%m%d')
+for (t in 2:dim(AAPL)[1])
+  D <- c(D,as.Date(toString(AAPL[t,1]),'%Y%m%d'))
+```
+
+```{r,echo=F}
+## Convert the data frame into xts object ordered by date in vector D
+AAPL_xts <- xts(AAPL[,2:6],order.by = D)
+```
+
+### Read the tickers for the data
+```{r}
+ticker <- read.table(paste(getwd(),"/data/Tickers.txt",sep=''), header=FALSE)
+```
+
+
+```{r,echo=FALSE,include=F}
+log_return = diff(log(AAPL_xts$CLOSE))
+for (k in 3:dim(ticker)[1])
+{
+  prices <- read.csv(paste(getwd(),"/data/", ticker$V1[k],".txt",sep =''))
+  dates <- NULL;
+  dates <- as.Date(toString(prices[1,1]),'%Y%m%d')
+  for (t in 2:dim(prices)[1])
+    dates <- c(dates,as.Date(toString(prices[t,1]),'%Y%m%d'))
+  close_xts <- xts(prices$CLOSE,order.by = dates)
+  # data_xts<-merge(data_xts,prices_xts)
+  log_return<-merge(log_return,diff(log(close_xts)))
+}
+```
+
+### Problem 1(a): compute log-returns using close price
+$$r_t = logP_t - logP_{t-1}$$
+```{r,echo=F}
+colnames(log_return) <- ticker[-1,1]
+#head(log_return)
+```
+
+### Problem 1(b): For all the log-returns estimate the sample mean, variance, standard deviations, median, skewness, and excess kurtosis.
+```{r}
+estmean = apply(log_return,2,mean,na.rm=T)
+estvariance = apply(log_return,2,var,na.rm=T)
+eststandarddeviation = apply(log_return,2,sd,na.rm=T)
+estskewness = apply(log_return,2,Skew,na.rm=T)
+estkurtosis = apply(log_return,2,Kurt,na.rm=T) - 3
+```
+
+### Problem 1(c)
+```{r}
+TT = apply(log_return[-1,],2,function(x){sum(!is.na(x))})
+meanupper = estmean+1.96*eststandarddeviation/sqrt(TT-1)
+meanlower = estmean-1.96*eststandarddeviation/sqrt(TT-1)
+plotCI(1:length(estmean),estmean,ui=meanupper,li=meanlower,xlab = 'ticker',ylab = 'estimated means',main = 'sample mean')
+# number of means significantly different from zero at 5% level
+length(estmean) - sum( 0 < meanupper & 0 > meanlower )
+```
+
+### Problem 1(d)
+```{r}
+skewupper = estskewness+1.96*sqrt(6/TT)
+skewlower = estskewness-1.96*sqrt(6/TT)
+plotCI(1:length(estskewness),estskewness,ui=skewupper,li=skewlower,xlab = 'ticker',ylab = 'estimated skewness',main = 'sample skewness')
+# number of skewness significantly different from zero at 5% level
+length(estskewness) - sum( 0 < skewupper & 0 > skewlower )
+```
+
+### Problem 1(e)
+```{r}
+kurtupper = estkurtosis+1.96*sqrt(24/TT)
+kurtlower = estkurtosis-1.96*sqrt(24/TT)
+plotCI(1:length(estkurtosis),estskewness,ui=kurtupper,li=kurtlower,xlab = 'ticker',ylab = 'estimated kurtosis',main = 'sample kurtosis')
+# number of excess kurtosis significantly different from zero at 5% level
+length(estkurtosis) - sum( 0 < kurtupper & 0 > kurtlower )
+```
+
+### Problem 1(f) 
+annualized daily mean return = $252\mu$
+```{r,echo=F}
+252*estmean
+```
+annualized standard deviation = $\sqrt{252}\sigma$
+```{r,echo=F}
+sqrt(252)*eststandarddeviation
+```
+
+### Problem 1(g) sharpe ratio 
+$$SR = \sqrt{252}\frac{\mu}{\sigma}$$
+```{r,echo=F}
+sqrt(252)*estmean/eststandarddeviation
+```
+
+### Problem 1(h)  plot sharpe ratio
+```{r,echo = F}
+a = sqrt(252)*estmean/eststandarddeviation
+plot(a,ylab = 'sharpe ratio')
+maxid =which.max(a)
+points(maxid,a[maxid],col='green')
+text(maxid,a[maxid],labels = ticker[maxid+1,1],pos=2,col='green')
+```
+
+### Project
+```{r,echo=FALSE}
+myrollmean = apply(log_return,2,function(x){rollapply(x,252,mean)})
+myrollvar = apply(log_return,2,function(x){rollapply(x,252,var)})
+myrollsd = apply(log_return,2,function(x){rollapply(x,252,sd)})
+myrollskew = apply(log_return,2,function(x){rollapply(x,252,Skew)})
+myrollkurt = apply(log_return,2,function(x){rollapply(x,252,Kurt)})
+myrollSR = sqrt(252)*myrollmean/myrollsd
+
+
+myrollmean = xts(myrollmean,order.by = D[-c(1:251)])
+myrollvar = xts(myrollvar,order.by = D[-c(1:251)])
+myrollsd = xts(myrollsd,order.by = D[-c(1:251)])
+myrollskew = xts(myrollskew,order.by = D[-c(1:251)])
+myrollkurt = xts(myrollkurt,order.by = D[-c(1:251)])
+myrollSR = xts(myrollSR,order.by = D[-c(1:251)])
+
+
+
+### mean plot 
+dygraph(myrollmean$MA,main = 'mean') %>%
+  dyRangeSelector()  %>% 
+  dyOptions(axisLineWidth = 1.5, fillGraph = FALSE, drawGrid = T, rightGap=50)
+### var plot
+dygraph(myrollvar$MA,main = 'var') %>%
+  dyRangeSelector()  %>% 
+  dyOptions(axisLineWidth = 1.5, fillGraph = FALSE, drawGrid = T, rightGap=50)
+### sd plot
+dygraph(myrollsd$MA,main = 'sd') %>%
+  dyRangeSelector()  %>% 
+  dyOptions(axisLineWidth = 1.5, fillGraph = FALSE, drawGrid = T, rightGap=50)
+### SR plot
+dygraph(myrollSR$MA,main = 'SR') %>%
+  dyRangeSelector()  %>% 
+  dyOptions(axisLineWidth = 1.5, fillGraph = FALSE, drawGrid = T, rightGap=50)
+### SR plot
+dygraph(myrollSR,main = 'SR') %>%
+  dyRangeSelector()  %>% 
+  dyOptions(axisLineWidth = 1.5, fillGraph = FALSE, drawGrid = T, rightGap=50)
+```
+
+
+
+### Rolling Window Exercise
+```{r}
+
+wS = 252 
+
+T=dim(log_return)[1]
+N=dim(log_return)[2]
+
+forecast_iid <- log_return[254:dim(log_return)[1],]
+forecast_ar <- forecast_iid
+
+ar_forecasting <- function(x){
+  if (sum(!is.na(x)) > 20)
+  {
+  ar_model <- arima(x, order = c(1,0,0))
+  forecast_ar1 <- forecast(ar_model, h=1)
+  return(forecast_ar1$mean)
+  }
+  else {return(mean(x,na.rm=TRUE))}
+}
+
+
+for ( t in 2:(T-wS) )
+{
+  rets   = 100*log_return[t:(t+wS-1),]
+  rets_n = 100*log_return[(t+wS),]
+  # Please add the missing code for
+  #  (i)   IID estimation (sample mean and sample covariance),
+    forecast_iid[t-1,] <- apply(rets,2,function(x){mean(x,na.rm=TRUE)})
+  #  (ii)  AR(1) prediction of the mean
+  #        Use AR(1) estimation and prediction only if there are more than 20 non NA observations in the window for the given asset.
+  #        Otherwise use the sample mean as a predictor
+    forecast_ar[t-1,] <- apply(rets,2,function(x){ar_forecasting(x)})
+    
+}
+ 
+
+```
+
+### Functions for Portfolio Optimization please modify as you need before using.
+```{r}
+
+# function to be minimized (maximum Sharpe ratio portfolio, where mu1 is a predicted mean of the returns of the assets in the portfolio, Sig a covariance matrix, and N1 number of assets in the portfolio).
+N1 <- 100
+# minus(!) SR function
+SR_P<-function(x) 
+{ 
+  x<-matrix(x,1,N1)
+  return( -(x %*% mu1)/sqrt(x %*% Sig %*% t(x) ))
+}
+
+
+# equality constraints
+equal_con <- function ( x ) {
+  h<- sum(x)-1  #weights sum to 1
+  return(h)
+} 
+
+# Calculating the RMSE and optimized weights for each stock / forecast date
+
+actual_returns = log_return[254:dim(log_return)[1],]  # Copying the data structure
+error_iid <- actual_returns                            # Copying the data structure
+error_ar <- actual_returns                             # Copying the data structure
+weights_iid <- actual_returns
+weights_ar <- actual_returns
+Ret_iid <- log_return[254:dim(log_return)[1],1]
+Ret_ar <- log_return[254:dim(log_return)[1],1]
+Performance <- log_return[254:dim(log_return)[1],1]
+
+for ( t in 2:(T-wS) )
+{ 
+  rets   = 100*log_return[(t:(t+wS-1)),]
+  rets_n = 100*log_return[(t+wS),]
+
+  #  (iii) RMSE computation for the two cases,
+  error_iid[t-1,] = actual_returns[t-1,] - forecast_iid[t-1,]    
+  error_ar[t-1,] = actual_returns[t-1,] - forecast_ar[t-1,]   
+}
+  #  (iv)  portfolio optimization using the functions above, build portfolio of assets with no Na in the parameters mu1 and Sig, and
+  
+  Sig <- cov(rets)
+  
+  Sig[is.na(Sig)] <- 0
+  
+  # IID Model
+  
+  k <- as.numeric(forecast_iid[t-1,])
+  k[is.na(k)] <- 0
+  mu1 <- k
+  
+  #Lower and upper bound for the portfolio weights
+  lb<-rep(0,N1) # long only portfolio
+  ub<-rep(0.2,N1) # no more than 20% in one asset
+  
+  #starting values for the portfolio optimizer
+  b<-rep(1/(N1),N1) #starting values for optimization
+  
+  weights <-slsqp(b, SR_P, gr=NULL, lower=lb, upper=ub, hin=NULL ,heq=equal_con)$par
+  weights<-(weights*(weights >= 0.01)) / sum(weights*(weights >= 0.01)) # 0 if weights<0.01 (standardized)
+  
+  weights_iid[t-1,] <- weights
+  
+  Ret_iid[t-1,1] = sum(weights * actual_returns[t-1,], na.rm=TRUE)
+  
+  # AR(1) Model
+  
+  k <- as.numeric(forecast_ar[t-1,])
+  k[is.na(k)] <- 0
+  mu1 <- k
+  
+#Lower and upper bound for the portfolio weights
+lb<-rep(0,N1) # long only portfolio
+ub<-rep(0.2,N1) # no more than 20% in one asset
+
+#starting values for the portfolio optimizer
+b<-rep(1/(N1),N1) #starting values for optimization
+
+
+weights <-slsqp(b, SR_P, gr=NULL, lower=lb, upper=ub, hin=NULL ,heq=equal_con)$par
+weights<-(weights*(weights >= 0.01)) / sum(weights*(weights >= 0.01)) # 0 if weights<0.01 (standardized)
+
+ weights_ar[t-1,] <- weights
+  
+  Ret_ar[t-1,1] = sum(weights * actual_returns[t-1,],na.rm = TRUE)
+  
+  #  (v)   check the portfolio performance for the two models using the next period returns in rets_n.
+  
+ # Performance[t-1,1] <- Ret_ar[t-1,1] - Ret_iid[t-1,1]
+
+  print(t)
+}
+
+```
+
