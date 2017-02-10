@@ -70,7 +70,7 @@ public class Extractor {
 		Connection.Response res;
 		try {
 			res = Jsoup.connect("https://www.finalpazarlama.com/Account/LogOn")
-				    .data("CustomerCode", "M05435", "UserName", "akyolbaran1@gmail.com", "Password", "amp14mes", "X-Requested-With", "XMLHttpRequest")
+				    .data("CustomerCode", "M05435", "UserName", "akyolbaran1@gmail.com", "Password", "xxxxxxxx", "X-Requested-With", "XMLHttpRequest")
 				    .userAgent("Mozilla")
 				    .method(Method.POST)
 				    .ignoreContentType(true)
