@@ -212,7 +212,7 @@ for ( t in 2:(T-wS) )
 
 ```
 
-### Functions for Portfolio Optimization please modify as you need before using.
+### Functions for Portfolio Optimization
 ```{r}
 
 # function to be minimized (maximum Sharpe ratio portfolio, where mu1 is a predicted mean of the returns of the assets in the portfolio, Sig a covariance matrix, and N1 number of assets in the portfolio).
