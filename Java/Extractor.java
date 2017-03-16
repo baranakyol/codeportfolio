@@ -16,6 +16,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
+#This was a scraper that logged into Supplier s integrated system and updated stocks and other inventory information
 
 
 public class Extractor {
