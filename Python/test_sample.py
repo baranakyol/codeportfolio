@@ -16,7 +16,6 @@ def builtindivide(x):
 def test_builtin():
     assert builtindivide(2) == float(0.25)
 
-    
 def test_numpy():
     assert np.array(2.)/np.array(8.) == 0.25
 

@@ -16,6 +16,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
+#This was a scraper that logged into Supplier s integrated system and updated stocks and other inventory information
 
 
 public class Extractor {
@@ -70,7 +71,7 @@ public class Extractor {
 		Connection.Response res;
 		try {
 			res = Jsoup.connect("https://www.finalpazarlama.com/Account/LogOn")
-				    .data("CustomerCode", "M05435", "UserName", "akyolbaran1@gmail.com", "Password", "xxxxxxxx", "X-Requested-With", "XMLHttpRequest")
+				    .data("CustomerCode", "Redacted-For-Security-Purposes", "UserName", "Redacted-For-Security-Purposes", "Password", "Redacted-For-Security-Purposes", "X-Requested-With", "XMLHttpRequest")
 				    .userAgent("Mozilla")
 				    .method(Method.POST)
 				    .ignoreContentType(true)
@@ -110,7 +111,7 @@ public class Extractor {
 			Document doc = Jsoup.connect("https://www.finalpazarlama.com/arama?")
 					  .data("FilterType", "0", "Keyword", ISBN)
 					  .userAgent("Mozilla")
-					  .cookie("FINALSID", "7dc4bb9c-b36b-4a0d-b6f9-84df2fe4218f")
+					  .cookie("FINALSID", "7dc4bb9c-Redacted-For-Security-Purposes-84df2fe4218f")
 					  .timeout(3000)
 					  .get();
 
