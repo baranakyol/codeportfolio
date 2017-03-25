@@ -118,7 +118,7 @@ write.csv(forecasts, file="forecasts.csv", row.names=FALSE,quote=FALSE)
 # Input the CSV file
 
 ```{r}
-forecastcsv <-read.csv(file="/Users/mehmetyilmaz/Desktop/TSHW4/forecasts.csv", header=T, sep=",",dec = ".")
+forecastcsv <-read.csv(file="/Users/baranakyol/Desktop/TSHW4/forecasts.csv", header=T, sep=",",dec = ".")
 
 
 
@@ -255,7 +255,7 @@ write.csv(forecasts2, file="forecastsAAPL.csv", row.names=FALSE,quote=FALSE)
 # Input the AAPL CSV file
 
 ```{r}
-forecastAAPLcsv <-read.csv(file="/Users/mehmetyilmaz/Desktop/TSHW4/forecastsAAPL.csv", header=T, sep=",",dec = ".")
+forecastAAPLcsv <-read.csv(file="/Users/baranakyol/Desktop/TSHW4/forecastsAAPL.csv", header=T, sep=",",dec = ".")
 
 
 
