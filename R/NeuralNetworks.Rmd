@@ -321,6 +321,7 @@ SPsharpe
 
 
 ```
+# Fit Neural Networks
 
 ```{r}
 nnAR3 <- function(data1,p,q,weights)
@@ -390,7 +391,7 @@ nnAll=matrix(list(),P,Q+1)
   }
       
 ```
-
+# Fit Loess
 
 ```{r}
 install.packages('locfit')
