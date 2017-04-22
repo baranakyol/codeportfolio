@@ -1,0 +1,1749 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Submission Information:\n",
+    "\n",
+    "### Team Member 1:\n",
+    "* UNI: ba2500\n",
+    "* Name: Baran Akyol\n",
+    "\n",
+    "### Team Member 2 [optional]:\n",
+    "* UNI:  \n",
+    "* Name:"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Step0 - Import Libraries, Load Data [0 points]\n",
+    "\n",
+    "This is the basic step where you can load the data and create train and test sets for internal validation as per your convinience."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 485,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "#from universe import all\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "from sklearn.pipeline import make_pipeline\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.model_selection import GridSearchCV\n",
+    "from sklearn.model_selection import cross_val_score\n",
+    "from sklearn.preprocessing import StandardScaler\n",
+    "from sklearn.metrics import roc_auc_score\n",
+    "from sklearn.preprocessing import OneHotEncoder\n",
+    "from sklearn import preprocessing \n",
+    "from sklearn.preprocessing import MinMaxScaler\n",
+    "from sklearn.metrics import roc_auc_score\n",
+    "from sklearn.decomposition import PCA\n",
+    "from sklearn.decomposition import FactorAnalysis\n",
+    "from sklearn.ensemble import BaggingClassifier\n",
+    "from sklearn.naive_bayes import GaussianNB\n",
+    "from sklearn.naive_bayes import MultinomialNB\n",
+    "from sklearn.preprocessing import Binarizer\n",
+    "from sklearn import svm\n",
+    "from sklearn.model_selection import GridSearchCV\n",
+    "from sklearn.linear_model import LogisticRegressionCV\n",
+    "import xgboost as xgb\n",
+    "from xgboost.sklearn import XGBClassifier\n",
+    "from sklearn.linear_model import RidgeClassifierCV\n",
+    "from sklearn.feature_selection import SelectFromModel\n",
+    "from sklearn.ensemble import RandomForestClassifier\n",
+    "from sklearn.feature_selection import SelectKBest\n",
+    "from sklearn.pipeline import FeatureUnion\n",
+    "from sklearn.model_selection import RandomizedSearchCV\n",
+    "from sklearn.discriminant_analysis import LinearDiscriminantAnalysis\n",
+    "from sklearn.datasets import make_gaussian_quantiles\n",
+    "from sklearn.ensemble import AdaBoostClassifier\n",
+    "from sklearn.metrics import accuracy_score\n",
+    "from sklearn.tree import DecisionTreeClassifier\n",
+    "from sklearn.ensemble import RandomTreesEmbedding, ExtraTreesClassifier\n",
+    "from sklearn.ensemble import GradientBoostingClassifier\n",
+    "from sklearn.ensemble import VotingClassifier\n",
+    "from sklearn.kernel_approximation import RBFSampler\n",
+    "from imblearn.under_sampling import RandomUnderSampler\n",
+    "#from mlxtend.classifier import StackingClassifier\n",
+    "from sklearn.linear_model import LogisticRegression\n",
+    "from imblearn.pipeline import make_pipeline as make_imb_pipeline\n",
+    "from imblearn.under_sampling import CondensedNearestNeighbour\n",
+    "from sklearn.discriminant_analysis import LinearDiscriminantAnalysis\n",
+    "from sklearn.preprocessing import MaxAbsScaler\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 441,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "#Training Data\n",
+    "data = pd.read_csv(\"data/data.csv\")\n",
+    "del data['duration']\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 442,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "#Testing Data\n",
+    "holdout = pd.read_csv(\"data/holdout.csv\")\n",
+    "#del holdout['duration']\n",
+    "ID = holdout['ID']\n",
+    "del holdout['ID']"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Step1 - Exploration and Preparation [10 points]\n",
+    "\n",
+    "In this step, we expect you to look into the data and try to understand it before modeling. This understanding may lead to some basic data preparation steps which are common across the two model sets required."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 443,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>age</th>\n",
+       "      <th>78</th>\n",
+       "      <th>job</th>\n",
+       "      <th>12</th>\n",
+       "      <th>marital_status</th>\n",
+       "      <th>4</th>\n",
+       "      <th>education</th>\n",
+       "      <th>8</th>\n",
+       "      <th>credit_default</th>\n",
+       "      <th>3</th>\n",
+       "      <th>housing</th>\n",
+       "      <th>3</th>\n",
+       "      <th>loan</th>\n",
+       "      <th>3</th>\n",
+       "      <th>contact</th>\n",
+       "      <th>2</th>\n",
+       "      <th>month</th>\n",
+       "      <th>10</th>\n",
+       "      <th>day_of_week</th>\n",
+       "      <th>5</th>\n",
+       "      <th>campaign</th>\n",
+       "      <th>40</th>\n",
+       "      <th>prev_days</th>\n",
+       "      <th>26</th>\n",
+       "      <th>prev_contacts</th>\n",
+       "      <th>8</th>\n",
+       "      <th>prev_outcomes</th>\n",
+       "      <th>3</th>\n",
+       "      <th>emp_var_rate</th>\n",
+       "      <th>32950</th>\n",
+       "      <th>cons_price_idx</th>\n",
+       "      <th>32950</th>\n",
+       "      <th>cons_conf_idx</th>\n",
+       "      <th>32950</th>\n",
+       "      <th>euribor3m</th>\n",
+       "      <th>32950</th>\n",
+       "      <th>nr_employed</th>\n",
+       "      <th>207</th>\n",
+       "      <th>subscribed</th>\n",
+       "      <th>2</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>33.0</td>\n",
+       "      <td>1383.0</td>\n",
+       "      <td>admin.</td>\n",
+       "      <td>8342</td>\n",
+       "      <td>married</td>\n",
+       "      <td>19955</td>\n",
+       "      <td>university.degree</td>\n",
+       "      <td>9760</td>\n",
+       "      <td>no</td>\n",
+       "      <td>26059</td>\n",
+       "      <td>yes</td>\n",
+       "      <td>17176</td>\n",
+       "      <td>no</td>\n",
+       "      <td>27179</td>\n",
+       "      <td>cellular</td>\n",
+       "      <td>20902</td>\n",
+       "      <td>may</td>\n",
+       "      <td>11016</td>\n",
+       "      <td>thu</td>\n",
+       "      <td>6945</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>13235.0</td>\n",
+       "      <td>999.0</td>\n",
+       "      <td>31707.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>28423</td>\n",
+       "      <td>nonexistent</td>\n",
+       "      <td>28423</td>\n",
+       "      <td>-1.702897</td>\n",
+       "      <td>1</td>\n",
+       "      <td>94.156527</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-41.265896</td>\n",
+       "      <td>1</td>\n",
+       "      <td>4.968435</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5229.0</td>\n",
+       "      <td>1048.0</td>\n",
+       "      <td>no</td>\n",
+       "      <td>29238</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>34.0</td>\n",
+       "      <td>1376.0</td>\n",
+       "      <td>blue-collar</td>\n",
+       "      <td>7408</td>\n",
+       "      <td>single</td>\n",
+       "      <td>9256</td>\n",
+       "      <td>high.school</td>\n",
+       "      <td>7580</td>\n",
+       "      <td>unknown</td>\n",
+       "      <td>6888</td>\n",
+       "      <td>no</td>\n",
+       "      <td>14974</td>\n",
+       "      <td>yes</td>\n",
+       "      <td>4971</td>\n",
+       "      <td>telephone</td>\n",
+       "      <td>12048</td>\n",
+       "      <td>jul</td>\n",
+       "      <td>5716</td>\n",
+       "      <td>mon</td>\n",
+       "      <td>6749</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>8682.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>373.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>3670</td>\n",
+       "      <td>failure</td>\n",
+       "      <td>3390</td>\n",
+       "      <td>-1.871395</td>\n",
+       "      <td>1</td>\n",
+       "      <td>92.589502</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-43.258444</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5.070245</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5228.0</td>\n",
+       "      <td>1037.0</td>\n",
+       "      <td>yes</td>\n",
+       "      <td>3712</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>32.0</td>\n",
+       "      <td>1295.0</td>\n",
+       "      <td>technician</td>\n",
+       "      <td>5371</td>\n",
+       "      <td>divorced</td>\n",
+       "      <td>3676</td>\n",
+       "      <td>basic.9y</td>\n",
+       "      <td>4889</td>\n",
+       "      <td>yes</td>\n",
+       "      <td>3</td>\n",
+       "      <td>unknown</td>\n",
+       "      <td>800</td>\n",
+       "      <td>unknown</td>\n",
+       "      <td>800</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>aug</td>\n",
+       "      <td>4954</td>\n",
+       "      <td>wed</td>\n",
+       "      <td>6531</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>4531.0</td>\n",
+       "      <td>6.0</td>\n",
+       "      <td>332.0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>606</td>\n",
+       "      <td>success</td>\n",
+       "      <td>1137</td>\n",
+       "      <td>1.444970</td>\n",
+       "      <td>1</td>\n",
+       "      <td>92.786254</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-42.295621</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1.323636</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5227.0</td>\n",
+       "      <td>997.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>36.0</td>\n",
+       "      <td>1275.0</td>\n",
+       "      <td>services</td>\n",
+       "      <td>3168</td>\n",
+       "      <td>unknown</td>\n",
+       "      <td>63</td>\n",
+       "      <td>professional.course</td>\n",
+       "      <td>4154</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>jun</td>\n",
+       "      <td>4272</td>\n",
+       "      <td>tue</td>\n",
+       "      <td>6495</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>2386.0</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>105.0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>170</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>-1.874953</td>\n",
+       "      <td>1</td>\n",
+       "      <td>93.094787</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-36.077564</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5.021518</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5230.0</td>\n",
+       "      <td>987.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>37.0</td>\n",
+       "      <td>1265.0</td>\n",
+       "      <td>management</td>\n",
+       "      <td>2340</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>basic.4y</td>\n",
+       "      <td>3313</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>nov</td>\n",
+       "      <td>3299</td>\n",
+       "      <td>fri</td>\n",
+       "      <td>6230</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>1335.0</td>\n",
+       "      <td>9.0</td>\n",
+       "      <td>55.0</td>\n",
+       "      <td>4</td>\n",
+       "      <td>58</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>-3.260938</td>\n",
+       "      <td>1</td>\n",
+       "      <td>91.397460</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-40.009586</td>\n",
+       "      <td>1</td>\n",
+       "      <td>4.245056</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5226.0</td>\n",
+       "      <td>923.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>31.0</td>\n",
+       "      <td>1258.0</td>\n",
+       "      <td>retired</td>\n",
+       "      <td>1390</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>basic.6y</td>\n",
+       "      <td>1846</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>apr</td>\n",
+       "      <td>2097</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>6.0</td>\n",
+       "      <td>798.0</td>\n",
+       "      <td>7.0</td>\n",
+       "      <td>48.0</td>\n",
+       "      <td>5</td>\n",
+       "      <td>17</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>1.075140</td>\n",
+       "      <td>1</td>\n",
+       "      <td>91.519714</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-42.665607</td>\n",
+       "      <td>1</td>\n",
+       "      <td>4.818017</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5225.0</td>\n",
+       "      <td>881.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>6</th>\n",
+       "      <td>35.0</td>\n",
+       "      <td>1255.0</td>\n",
+       "      <td>entrepreneur</td>\n",
+       "      <td>1198</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>unknown</td>\n",
+       "      <td>1394</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>oct</td>\n",
+       "      <td>540</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>7.0</td>\n",
+       "      <td>519.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>46.0</td>\n",
+       "      <td>6</td>\n",
+       "      <td>5</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>1.151109</td>\n",
+       "      <td>1</td>\n",
+       "      <td>92.128773</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-36.791706</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1.106071</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5231.0</td>\n",
+       "      <td>859.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7</th>\n",
+       "      <td>30.0</td>\n",
+       "      <td>1187.0</td>\n",
+       "      <td>self-employed</td>\n",
+       "      <td>1140</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>illiterate</td>\n",
+       "      <td>14</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>sep</td>\n",
+       "      <td>465</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>8.0</td>\n",
+       "      <td>330.0</td>\n",
+       "      <td>12.0</td>\n",
+       "      <td>45.0</td>\n",
+       "      <td>7</td>\n",
+       "      <td>1</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>1.310731</td>\n",
+       "      <td>1</td>\n",
+       "      <td>95.146087</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-46.603565</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1.295641</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5232.0</td>\n",
+       "      <td>777.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>8</th>\n",
+       "      <td>38.0</td>\n",
+       "      <td>1146.0</td>\n",
+       "      <td>housemaid</td>\n",
+       "      <td>827</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>mar</td>\n",
+       "      <td>437</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>9.0</td>\n",
+       "      <td>242.0</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>42.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>-1.922613</td>\n",
+       "      <td>1</td>\n",
+       "      <td>92.750438</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-35.820636</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0.886056</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5224.0</td>\n",
+       "      <td>728.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>9</th>\n",
+       "      <td>39.0</td>\n",
+       "      <td>1111.0</td>\n",
+       "      <td>unemployed</td>\n",
+       "      <td>797</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>dec</td>\n",
+       "      <td>154</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>184.0</td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>40.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>0.903708</td>\n",
+       "      <td>1</td>\n",
+       "      <td>91.262542</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-46.581714</td>\n",
+       "      <td>1</td>\n",
+       "      <td>4.975101</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5193.0</td>\n",
+       "      <td>707.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>10</th>\n",
+       "      <td>29.0</td>\n",
+       "      <td>1051.0</td>\n",
+       "      <td>student</td>\n",
+       "      <td>708</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>11.0</td>\n",
+       "      <td>127.0</td>\n",
+       "      <td>13.0</td>\n",
+       "      <td>26.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>0.998749</td>\n",
+       "      <td>1</td>\n",
+       "      <td>92.185730</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-42.581470</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1.357722</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5192.0</td>\n",
+       "      <td>699.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>11</th>\n",
+       "      <td>41.0</td>\n",
+       "      <td>1024.0</td>\n",
+       "      <td>unknown</td>\n",
+       "      <td>261</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>12.0</td>\n",
+       "      <td>107.0</td>\n",
+       "      <td>11.0</td>\n",
+       "      <td>23.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>1.522386</td>\n",
+       "      <td>1</td>\n",
+       "      <td>93.547333</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-46.820163</td>\n",
+       "      <td>1</td>\n",
+       "      <td>4.885667</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5191.0</td>\n",
+       "      <td>664.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>12</th>\n",
+       "      <td>40.0</td>\n",
+       "      <td>997.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>13.0</td>\n",
+       "      <td>75.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>19.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "      <td>1.591481</td>\n",
+       "      <td>1</td>\n",
+       "      <td>93.134857</td>\n",
+       "      <td>1</td>\n",
+       "      <td>-35.982422</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0.871201</td>\n",
+       "      <td>1</td>\n",
+       "      <td>5194.0</td>\n",
+       "      <td>643.0</td>\n",
+       "      <td></td>\n",
+       "      <td></td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "     age      78            job    12 marital_status      4  \\\n",
+       "0   33.0  1383.0         admin.  8342        married  19955   \n",
+       "1   34.0  1376.0    blue-collar  7408         single   9256   \n",
+       "2   32.0  1295.0     technician  5371       divorced   3676   \n",
+       "3   36.0  1275.0       services  3168        unknown     63   \n",
+       "4   37.0  1265.0     management  2340                         \n",
+       "5   31.0  1258.0        retired  1390                         \n",
+       "6   35.0  1255.0   entrepreneur  1198                         \n",
+       "7   30.0  1187.0  self-employed  1140                         \n",
+       "8   38.0  1146.0      housemaid   827                         \n",
+       "9   39.0  1111.0     unemployed   797                         \n",
+       "10  29.0  1051.0        student   708                         \n",
+       "11  41.0  1024.0        unknown   261                         \n",
+       "12  40.0   997.0                                              \n",
+       "\n",
+       "              education     8 credit_default      3  housing      3     loan  \\\n",
+       "0     university.degree  9760             no  26059      yes  17176       no   \n",
+       "1           high.school  7580        unknown   6888       no  14974      yes   \n",
+       "2              basic.9y  4889            yes      3  unknown    800  unknown   \n",
+       "3   professional.course  4154                                                  \n",
+       "4              basic.4y  3313                                                  \n",
+       "5              basic.6y  1846                                                  \n",
+       "6               unknown  1394                                                  \n",
+       "7            illiterate    14                                                  \n",
+       "8                                                                              \n",
+       "9                                                                              \n",
+       "10                                                                             \n",
+       "11                                                                             \n",
+       "12                                                                             \n",
+       "\n",
+       "        3    contact      2 month     10 day_of_week     5  campaign       40  \\\n",
+       "0   27179   cellular  20902   may  11016         thu  6945       1.0  13235.0   \n",
+       "1    4971  telephone  12048   jul   5716         mon  6749       2.0   8682.0   \n",
+       "2     800                     aug   4954         wed  6531       3.0   4531.0   \n",
+       "3                             jun   4272         tue  6495       4.0   2386.0   \n",
+       "4                             nov   3299         fri  6230       5.0   1335.0   \n",
+       "5                             apr   2097                         6.0    798.0   \n",
+       "6                             oct    540                         7.0    519.0   \n",
+       "7                             sep    465                         8.0    330.0   \n",
+       "8                             mar    437                         9.0    242.0   \n",
+       "9                             dec    154                        10.0    184.0   \n",
+       "10                                                              11.0    127.0   \n",
+       "11                                                              12.0    107.0   \n",
+       "12                                                              13.0     75.0   \n",
+       "\n",
+       "    prev_days       26 prev_contacts      8 prev_outcomes      3  \\\n",
+       "0       999.0  31707.0             0  28423   nonexistent  28423   \n",
+       "1         3.0    373.0             1   3670       failure   3390   \n",
+       "2         6.0    332.0             2    606       success   1137   \n",
+       "3         4.0    105.0             3    170                        \n",
+       "4         9.0     55.0             4     58                        \n",
+       "5         7.0     48.0             5     17                        \n",
+       "6         2.0     46.0             6      5                        \n",
+       "7        12.0     45.0             7      1                        \n",
+       "8         5.0     42.0                                             \n",
+       "9        10.0     40.0                                             \n",
+       "10       13.0     26.0                                             \n",
+       "11       11.0     23.0                                             \n",
+       "12        1.0     19.0                                             \n",
+       "\n",
+       "    emp_var_rate  32950  cons_price_idx  32950  cons_conf_idx  32950  \\\n",
+       "0      -1.702897      1       94.156527      1     -41.265896      1   \n",
+       "1      -1.871395      1       92.589502      1     -43.258444      1   \n",
+       "2       1.444970      1       92.786254      1     -42.295621      1   \n",
+       "3      -1.874953      1       93.094787      1     -36.077564      1   \n",
+       "4      -3.260938      1       91.397460      1     -40.009586      1   \n",
+       "5       1.075140      1       91.519714      1     -42.665607      1   \n",
+       "6       1.151109      1       92.128773      1     -36.791706      1   \n",
+       "7       1.310731      1       95.146087      1     -46.603565      1   \n",
+       "8      -1.922613      1       92.750438      1     -35.820636      1   \n",
+       "9       0.903708      1       91.262542      1     -46.581714      1   \n",
+       "10      0.998749      1       92.185730      1     -42.581470      1   \n",
+       "11      1.522386      1       93.547333      1     -46.820163      1   \n",
+       "12      1.591481      1       93.134857      1     -35.982422      1   \n",
+       "\n",
+       "    euribor3m  32950  nr_employed     207 subscribed      2  \n",
+       "0    4.968435      1       5229.0  1048.0         no  29238  \n",
+       "1    5.070245      1       5228.0  1037.0        yes   3712  \n",
+       "2    1.323636      1       5227.0   997.0                    \n",
+       "3    5.021518      1       5230.0   987.0                    \n",
+       "4    4.245056      1       5226.0   923.0                    \n",
+       "5    4.818017      1       5225.0   881.0                    \n",
+       "6    1.106071      1       5231.0   859.0                    \n",
+       "7    1.295641      1       5232.0   777.0                    \n",
+       "8    0.886056      1       5224.0   728.0                    \n",
+       "9    4.975101      1       5193.0   707.0                    \n",
+       "10   1.357722      1       5192.0   699.0                    \n",
+       "11   4.885667      1       5191.0   664.0                    \n",
+       "12   0.871201      1       5194.0   643.0                    "
+      ]
+     },
+     "execution_count": 443,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# A sloppy function to give an overview of the distribution of variables\n",
+    "\n",
+    "def count_columns(dataframe,rows=10):\n",
+    "    \"\"\"\n",
+    "    parameters\n",
+    "    ----------\n",
+    "    dataframe: pandas DataFrame\n",
+    "    \n",
+    "    rows: Number of rows to display\n",
+    "    \n",
+    "    \"\"\"\n",
+    "    \n",
+    "    if type(dataframe) != 'pandas.core.frame.DataFrame':\n",
+    "        dataframe = pd.DataFrame(dataframe)\n",
+    "    \n",
+    "    def singlecolumn(i):\n",
+    "        \n",
+    "        s = pd.DataFrame(dataframe[i].value_counts().index,columns=[i])\n",
+    "        \n",
+    "        s[len(dataframe[i].unique())] = dataframe[i].value_counts().values\n",
+    "        \n",
+    "        return s\n",
+    "\n",
+    "    pd.options.display.max_columns= len(dataframe) * 2\n",
+    "    \n",
+    "    return pd.concat( [ singlecolumn(i) for i in dataframe.columns ],axis=1) \\\n",
+    "                            .iloc[0:rows,:].replace(np.nan ,' ', regex=True)\n",
+    "\n",
+    "count_columns(data,13)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 444,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "def select_columns(dataframe):\n",
+    "    Continuous = ['age','prev_days','emp_var_rate','cons_conf_idx','euribor3m','nr_employed']\n",
+    "    \n",
+    "    Categorical = ['job','marital_status','education','credit_default','housing',\n",
+    "                   'loan','contact','month','day_of_week','prev_outcomes','campaign']\n",
+    "    if 'subscribed' in dataframe.columns:\n",
+    "        return dataframe[Continuous + Categorical + ['subscribed']],Categorical\n",
+    "    else:\n",
+    "        return dataframe[Continuous + Categorical],Categorical\n",
+    "\n",
+    "TRAIN,cat=select_columns(data)\n",
+    "HOLD,cat=select_columns(holdout)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Clearly some variables are categorical and may need one hot encoding. To not deal with pipeline encoding everytime I will add an option to my preproces function. I don't think I need to encode N/A values seperately as dummy encoding will encode them as well. Not all columns in the holdout set are in train and vice versa however so have to manually add those columns for compatibility."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 445,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "def preprocess(dataframe,Categoricals,dummy=0):\n",
+    "   \n",
+    "    \"\"\"Label Encode categorical variables using dummy variable and seperate frame to X,y\n",
+    "    \n",
+    "    Returns\n",
+    "    -------\n",
+    "    \n",
+    "    X : numpy.ndarray\n",
+    "        Label Encoded DataFrame consisting of features\n",
+    "         \n",
+    "    y : numpy.ndarray\n",
+    "        Response Variable, 1d array\n",
+    "    \n",
+    "    \"\"\"\n",
+    "    \n",
+    "    data = dataframe.copy()\n",
+    "\n",
+    "    data = data[data.credit_default != 'yes']\n",
+    "    \n",
+    "    \n",
+    "    if dummy == 1:\n",
+    "        #apply dummy variabl encoding\n",
+    "        data = pd.get_dummies(data,columns=Categoricals)\n",
+    "        \n",
+    "        # there are  values that don't match in categories section this is to manage that\n",
+    "        if 'campaign' in Categoricals and 'subscribed' in data.columns:\n",
+    "            data.insert(94,'campaign_36.0',0)\n",
+    "            data.insert(100,'campaign_43.0',0)\n",
+    "\n",
+    "        elif 'campaign' in Categoricals:\n",
+    "            data.insert(85,'campaign_32.0',0)\n",
+    "            data.insert(85,'campaign_31.0',0)\n",
+    "            data.insert(85,'campaign_30.0',0)\n",
+    "            data.insert(85,'campaign_29.0',0)\n",
+    "            data.insert(90,'campaign_34.0',0)\n",
+    "            data.insert(93,'campaign_37.0',0)\n",
+    "            data.insert(94,'campaign_42.0',0)\n",
+    "            data.insert(94,'campaign_41.0',0)\n",
+    "            data.insert(94,'campaign_39.0',0)\n",
+    "            data.insert(97,'campaign_56.0',0)\n",
+    "            \n",
+    "            \n",
+    "            \n",
+    "    else:\n",
+    "        #apply labelencoding to every categorical column\n",
+    "        data[Categoricals]=data[Categoricals].apply(preprocessing.LabelEncoder().fit_transform)\n",
+    "    \n",
+    "    if 'subscribed' in data.columns:\n",
+    "        \n",
+    "        #extract y as binary column and\n",
+    "        y = preprocessing.LabelBinarizer().fit_transform(data['subscribed'])\n",
+    "        #delete y from original \n",
+    "        del data['subscribed'] \n",
+    "        return np.array(data),y.reshape((y.shape[0],))\n",
+    "\n",
+    "    \n",
+    "    else:\n",
+    "        \n",
+    "        return np.array(data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 547,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def cv_score(alg,X,y):\n",
+    "    \n",
+    "    \"\"\"Computes cv score\n",
+    "    \n",
+    "    parameters\n",
+    "    ----------\n",
+    "    \n",
+    "    alg: The algorithm to use\n",
+    "    \n",
+    "    \"\"\"\n",
+    "    \n",
+    "    score = cross_val_score(alg,X,y,cv=5,scoring='roc_auc',verbose=1)\n",
+    "    print 'scores : ', score\n",
+    "    tesprint 'mean : ', np.mean(score)\n",
+    "    return np.mean(score)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 447,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def construct_holdout(ID,prediction,):\n",
+    "    \n",
+    "    \"\"\"Saves results as a kaggle ready .csv file\n",
+    "    \n",
+    "    \"\"\"\n",
+    "    #result = pd.DataFrame(np.column_stack((ID,prediction)),columns=[float('ID'),'subscribed'])\n",
+    "    prediction = pd.DataFrame(prediction,columns=['subscribed'])\n",
+    "    prediction['ID'] = ID\n",
+    "    prediction.to_csv('holdout.csv',columns = ['ID','subscribed'],index=False,float_format='%f')\n",
+    "    \n",
+    "    print 'success'"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 448,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "TRAIN,cat=select_columns(data)\n",
+    "HOLD,cat=select_columns(holdout)\n",
+    "X, y = preprocess(TRAIN,cat)\n",
+    "H = preprocess(HOLD,cat)\n",
+    "\n",
+    "X_train,X_test,y_train,y_test = train_test_split(X,y,random_state=2017)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 449,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "DTRAIN,cat=select_columns(data)\n",
+    "DHOLD,cat=select_columns(holdout)\n",
+    "DX, Dy = preprocess(TRAIN,cat,dummy=1)\n",
+    "DH = preprocess(HOLD,cat,dummy=1)\n",
+    "\n",
+    "DX_train,DX_test,Dy_train,Dy_test = train_test_split(X,y,random_state=2017)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Step2 - ModelSet1 [35 points]\n",
+    "\n",
+    "In this step, we expect you to perform the following steps relevant to the models you choose for set1:\n",
+    "\n",
+    "* feature engineering\n",
+    "* validation\n",
+    "* feature selection\n",
+    "* final model selection\n",
+    "\n",
+    "You may select up to 5 models in this step for the purpose of final ensemble. Any classification algorithm covered in class apart from tree-based models can be tested here."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 451,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'\\nscores :  [ 0.78967346  0.78190539  0.79355691  0.80207903  0.78288818]\\nmean :  0.790020591501\\n'"
+      ]
+     },
+     "execution_count": 451,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# FIRST MODEL\n",
+    "\n",
+    "# LogisticRegression\n",
+    "\n",
+    "log=LogisticRegressionCV(fit_intercept=0)\n",
+    "\n",
+    "combined_features = FeatureUnion([(\"FA\", FactorAnalysis()), (\"univ_select\", SelectKBest(k=12))])\n",
+    "\n",
+    "logregpipe = make_pipeline(MinMaxScaler((0,1)),SelectKBest(k=14),log)\n",
+    "\n",
+    "#logregpipe.fit(X_train,y_train)\n",
+    "\n",
+    "#cv_score(logregpipe,DX,Dy)  #0.79\n",
+    "\"\"\"\n",
+    "scores :  [ 0.78967346  0.78190539  0.79355691  0.80207903  0.78288818]\n",
+    "mean :  0.790020591501\n",
+    "\"\"\"\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 452,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'\\nscores :  [ 0.7882516   0.77936115  0.79386554  0.79763645  0.77727998]\\nmean :  0.787278945004\\n\\n'"
+      ]
+     },
+     "execution_count": 452,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#SECOND MODEL\n",
+    "\n",
+    "#RidgeClassifierCV\n",
+    "\n",
+    "\n",
+    "Ridge = make_pipeline(MinMaxScaler(),SelectKBest(k=15),RidgeClassifierCV(alphas=(0.1,0.25,0.4,0.7,1)))\n",
+    "\n",
+    "#cv_score(Ridge,DX,Dy) \n",
+    "\n",
+    "\"\"\"\n",
+    "scores :  [ 0.7882516   0.77936115  0.79386554  0.79763645  0.77727998]\n",
+    "mean :  0.787278945004\n",
+    "\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 453,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'\\nGB = GaussianNB()\\n\\n#cv_score(GNB,X,y) \\n\\nscores :  [ 0.77750643  0.76044588  0.77705859  0.78616237  0.771978  ]\\nmean :  0.774630254457\\n\\n'"
+      ]
+     },
+     "execution_count": 453,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#THIRD MODEL\n",
+    "\n",
+    "#GaussianNB()\n",
+    "\n",
+    "#named it to pipe at the final second and its stuck as name so can't call it but didn't use it anyway\n",
+    "\n",
+    "\"\"\"\n",
+    "GB = GaussianNB()\n",
+    "\n",
+    "#cv_score(GNB,X,y) \n",
+    "\n",
+    "scores :  [ 0.77750643  0.76044588  0.77705859  0.78616237  0.771978  ]\n",
+    "mean :  0.774630254457\n",
+    "\n",
+    "\"\"\"\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 454,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'\\nscores :  [ 0.7876034   0.7854583   0.79613523  0.79419745  0.77840803]\\nmean :  0.788360483811\\n'"
+      ]
+     },
+     "execution_count": 454,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "LDA = LinearDiscriminantAnalysis()\n",
+    "\n",
+    "#cv_score(LDA,X,y)\n",
+    "\"\"\"\n",
+    "scores :  [ 0.7876034   0.7854583   0.79613523  0.79419745  0.77840803]\n",
+    "mean :  0.788360483811\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Step3 - ModelSet2 [35 points]\n",
+    "\n",
+    "In this step, we expect you to perform the following steps relevant to the models you choose for set2:\n",
+    "\n",
+    "* feature engineering\n",
+    "* validation\n",
+    "* feature selection\n",
+    "* final model selection\n",
+    "\n",
+    "You may select up to 5 models in this step for the purpose of final ensemble. We encourage you to try decition tree, random forest and gradient boosted tree methods here and pick the one which you think works best."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 457,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "\"\\n#check to see which step produces best results\\nxgb.cv(xgbClassifier.get_xgb_params(), dtrain, num_boost_round=xgbClassifier.get_params()['n_estimators'], nfold=5,\\n            metrics= {'auc'}, show_progress=True)\\n\""
+      ]
+     },
+     "execution_count": 457,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#FIRST MODEL\n",
+    "\n",
+    "#XGBoost\n",
+    "\n",
+    "xgbClassifier = xgb.XGBClassifier(\n",
+    " learning_rate =0.05,\n",
+    " n_estimators=57,\n",
+    " max_depth=6,\n",
+    " min_child_weight=3,\n",
+    " gamma=0.2,\n",
+    " subsample=0.75,\n",
+    " colsample_bytree=0.75,\n",
+    " objective= 'binary:logistic',\n",
+    " nthread=3,\n",
+    " scale_pos_weight=1,\n",
+    " seed=42\n",
+    ")\n",
+    "\n",
+    "dtrain = xgb.DMatrix(DX,Dy)\n",
+    "\n",
+    "\n",
+    "# Below are cv and gridsearch I used to tune the parameters\n",
+    "\"\"\"\n",
+    "param = {\n",
+    " 'max_depth':range(3,10,2),\n",
+    " 'min_child_weight':range(1,6,2)\n",
+    "}\n",
+    "gsearch1 = GridSearchCV(estimator = XGBClassifier( learning_rate =0.1, n_estimators=140, max_depth=5,\n",
+    " min_child_weight=1, gamma=0, subsample=0.8, colsample_bytree=0.8,\n",
+    " objective= 'binary:logistic', nthread=4, scale_pos_weight=1, seed=27), \n",
+    " param_grid = param_test1, scoring='roc_auc',n_jobs=4,iid=False, cv=5)\n",
+    "\n",
+    "gsearch1.fit(X,y)\n",
+    "gsearch1.best_params_\n",
+    "\"\"\"\n",
+    "\n",
+    "\"\"\"\n",
+    "#check to see which step produces best results\n",
+    "xgb.cv(xgbClassifier.get_xgb_params(), dtrain, num_boost_round=xgbClassifier.get_params()['n_estimators'], nfold=5,\n",
+    "            metrics= {'auc'}, show_progress=True)\n",
+    "\"\"\"\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 458,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "#cv_score(xgbClassifier,DX,Dy) #0.797"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 534,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# SECOND MODEL RANDOM FOREST CLASSIFIER\n",
+    "\n",
+    "#gridsearch for parameters\n",
+    "\"\"\"\n",
+    "param_grid = {\"max_depth\": [3, None],\n",
+    "              \"min_samples_split\": [2, 5, 10],\n",
+    "              \"min_samples_leaf\": [2, 5, 10],\n",
+    "              \"bootstrap\": [True, False]}\n",
+    "\n",
+    "rfgrid = GridSearchCV(RandomForestClassifier(n_estimators=180), param_grid=param_grid)\n",
+    "rfgrid.fit(X_train,y_train)\n",
+    "\"\"\"\n",
+    "\n",
+    "rf = RandomForestClassifier(n_estimators=180,criterion='entropy',max_depth = 9,\\\n",
+    "                              max_features=15,min_samples_split=2,min_samples_leaf=3,warm_start=1)\n",
+    "\n",
+    "#rf.fit(X,y)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 460,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "#cv_score(rf,DX,Dy)  #0.797"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 461,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "#THIRD MODEL EXTRA TREES CLASSIFIER\n",
+    "\n",
+    "extratrees = ExtraTreesClassifier(n_estimators = 180, criterion='entropy',max_features=12,max_depth=8,min_samples_split=3,min_samples_leaf=4,warm_start=1)\n",
+    "\n",
+    "#extratrees.fit(X,y)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 462,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "#cv_score(extratrees,X,y) #0.799"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 463,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "#FOURTH MODEL GRADIENT BOOSTING CLASSIFIER\n",
+    "\n",
+    "GBM = GradientBoostingClassifier(n_estimators=110, learning_rate=0.3,max_features = 20,\n",
+    "        max_depth=2, random_state=0)\n",
+    "#GBM.fit(X_train, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 464,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "#cv_score(GBM,X,y) #0.797"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Step4 - Ensemble [20 points + 10 Bonus points]\n",
+    "\n",
+    "In this step, we expect you to use the models created before and create new predictions. You should definitely try poor man's stacking but we encourage you to think of different ensemble techniques as well. We will judge your creativity and improvement in model performance using ensemble models and you can potentially earn 10 bonus points here."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 465,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "\n",
+    "#Voting Classifier using homogenous voting\n",
+    "\n",
+    "Vhard = VotingClassifier(estimators=[('lr', logregpipe), ('rf', rf), ('xgb', xgbClassifier)], voting='soft')\n",
+    "\n",
+    "#doesn't work well"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 543,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "\n",
+    "#Voting Classifier using weighted votes\n",
+    "\n",
+    "Vweighted = VotingClassifier(estimators=[('lr', logregpipe), ('rf', rf), \\\n",
+    "                                    ('xgb', xgbClassifier)], voting='soft', weights=[3,19,5])\n",
+    "\n",
+    "#works better  cv around 0.7982  which is highest score I reached till now"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 467,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "# Another Ensemble\n",
+    "\n",
+    "Vweighted2 = VotingClassifier(estimators=[('lr', logregpipe),('rf', rf), \\\n",
+    "                                  ('extra',extratrees),  ('xgb', xgbClassifier)], voting='soft', weights=[2,20,7,2])\n",
+    "\n",
+    "#tried tuning the weights but no results"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 567,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'\\ncv_score(sclf,DX,Dy)\\n\\nscores :  [ 0.61367795  0.61611216  0.61312319  0.6060669   0.62375434]\\nmean :  0.614546908301\\n\\n\\n'"
+      ]
+     },
+     "execution_count": 567,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# STACKING\n",
+    "\n",
+    "#doesn't work at all\n",
+    "\n",
+    "\"\"\"also I couldn't install this on travis so quaoting it out \"\"\"\n",
+    "#lr = LogisticRegression()\n",
+    "#sclf = StackingClassifier(classifiers=[logregpipe, rf, xgbClassifier], \n",
+    "                         # meta_classifier=lr)\n",
+    "\n",
+    "\"\"\"\n",
+    "cv_score(sclf,DX,Dy)\n",
+    "\n",
+    "scores :  [ 0.61367795  0.61611216  0.61312319  0.6060669   0.62375434]\n",
+    "mean :  0.614546908301\n",
+    "\n",
+    "\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 473,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# Under Sample\n",
+    "\n",
+    "#doesn't improve results\n",
+    "\n",
+    "UnderSample = make_imb_pipeline(RandomUnderSampler(random_state=0, replacement=True),rf)\n",
+    "\n",
+    "#cv_score(UnderSample,DX,Dy)  0.79715375352   # no improvement"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 475,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'\\nscores :  [ 0.79953921  0.79011081  0.796847    0.80815789  0.78773781]\\nmean :  0.796478545972\\n'"
+      ]
+     },
+     "execution_count": 475,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "US2 = make_imb_pipeline(RandomUnderSampler(random_state=0, replacement=True),logregpipe)\n",
+    "US3 = make_imb_pipeline(RandomUnderSampler(random_state=0, replacement=True),xgbClassifier)\n",
+    "US4 = make_imb_pipeline(RandomUnderSampler(random_state=0, replacement=True),extratrees)\n",
+    "\n",
+    "\n",
+    "USVote = VotingClassifier(estimators=[('1',UnderSample),('2',US2),('3',US3),('4',US4)],voting='soft')\n",
+    "\n",
+    "\"\"\"\n",
+    "scores :  [ 0.79953921  0.79011081  0.796847    0.80815789  0.78773781]\n",
+    "mean :  0.796478545972\n",
+    "\"\"\"\n",
+    "\n",
+    "#No improvement"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 476,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "#Condensed Nearest Neighbors\n",
+    "\n",
+    "cnn = make_imb_pipeline(CondensedNearestNeighbour(),rf)\n",
+    "\n",
+    "# cv_score(cnn,DX,Dy)\n",
+    "\n",
+    "# Takes way too long with no significant increase"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 477,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'\\ncv_score(rfVote,DX,Dy)\\nscores :  [ 0.80212443  0.79096503  0.79649204  0.8073666   0.79172746]\\nmean :  0.7977351\\n'"
+      ]
+     },
+     "execution_count": 477,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#Took my best estimator, changed 1 parameter for each keeping others consant\n",
+    "\n",
+    "rf1 = RandomForestClassifier(n_estimators=180,criterion='entropy',max_depth = 9,\\\n",
+    "                              max_features=15,min_samples_split=2,min_samples_leaf=3,warm_start=1)\n",
+    "rf2 = RandomForestClassifier(n_estimators=90,criterion='entropy',max_depth = 9,\\\n",
+    "                              max_features=15,min_samples_split=2,min_samples_leaf=3,warm_start=1)\n",
+    "rf3 = RandomForestClassifier(n_estimators=180,criterion='entropy',max_depth = 4,\\\n",
+    "                              max_features=15,min_samples_split=2,min_samples_leaf=3,warm_start=1)\n",
+    "rf4 = RandomForestClassifier(n_estimators=180,criterion='gini',max_depth = 9,\\\n",
+    "                              max_features=15,min_samples_split=2,min_samples_leaf=3,warm_start=0)\n",
+    "rf5 = RandomForestClassifier(n_estimators=180,criterion='entropy',max_depth = 9,max_features=15,min_samples_split=5,min_samples_leaf=3,warm_start=1)\n",
+    "rf6 = RandomForestClassifier(n_estimators=180,criterion='entropy',max_depth = 9,\\\n",
+    "                              max_features=9,min_samples_split=2,min_samples_leaf=3,warm_start=1)\n",
+    "rf7 = RandomForestClassifier(n_estimators=180,criterion='entropy',max_depth = 9,max_features=15,min_samples_split=2,min_samples_leaf=7,warm_start=1)\n",
+    "rf8 = RandomForestClassifier(n_estimators=180,criterion='entropy',max_depth = 9,\\\n",
+    "                              max_features=15,min_samples_split=2,min_samples_leaf=1,warm_start=1)\n",
+    "\n",
+    "\n",
+    "rfVote = VotingClassifier(estimators = [('rf1',rf1),('rf2',rf2),('rf3',rf3),('rf4',rf4),('rf5',rf5),\\\n",
+    "                                       ('rf6',rf6),('rf7',rf7),('rf8',rf8)],voting='soft')\n",
+    "\n",
+    "#cv_score(USVote,DX,Dy)\n",
+    "\n",
+    "\"\"\"\n",
+    "cv_score(rfVote,DX,Dy)\n",
+    "scores :  [ 0.80212443  0.79096503  0.79649204  0.8073666   0.79172746]\n",
+    "mean :  0.7977351\n",
+    "\"\"\"\n",
+    "\n",
+    "#No Improvement"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 528,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "\n",
+    "# embed Random Forest and then use a classifier\n",
+    "\n",
+    "rf_enc = OneHotEncoder()\n",
+    "\n",
+    "rf_lm = xgbClassifier\n",
+    "\n",
+    "rf.fit(X_train, y_train)\n",
+    "\n",
+    "rf_enc.fit(rf.apply(X_train))\n",
+    "\n",
+    "rf_lm.fit(rf_enc.transform(rf.apply(X_test)), y_test)\n",
+    "\n",
+    "y_pred_rf_lm = rf_lm.predict_proba(rf_enc.transform(rf.apply(H)))[:, 1]\n",
+    "\n",
+    "# FINAL PREDICTION USING THIS METHOD DID NOT PERFORM WELL ON KAGGLE\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Final Remarks\n",
+    "\n",
+    "-For both ModelSet1 and ModelSet2, I was able to reach Kaggle benchmark. I tried imputation, scaling,\n",
+    "decomposition such as Factor Analysis or PCA and many other things but got no significant increase in my score so dropped most of the things I tried in the end. \n",
+    "\n",
+    "-I split my Training set further to X_train, X_test, etc. and evaluated models based on the X_train Cross Validation score initially. Later I started evaluating on X,y in order to fit the training set best and achieve a good Kaggle score.\n",
+    "\n",
+    "-I commented most functional elements as TravisCI doesn't enjoy being overworked and at this point I respect it way too much to overwork it. \n",
+    "\n",
+    "-My Final Ensemble performs slightly better than my best performing classifier with a test score around 7.84, which is greater than 0.78 the benchmark for my other models. \n",
+    "\n",
+    "Please note that this is not the crossvalidation score where some models can perform higher."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 563,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "VotingClassifier(estimators=[('lr', Pipeline(steps=[('minmaxscaler', MinMaxScaler(copy=True, feature_range=(0, 1))), ('selectkbest', SelectKBest(k=14, score_func=<function f_classif at 0x1142e4230>)), ('logisticregressioncv', LogisticRegressionCV(Cs=10, class_weight=None, cv=None, dual=False,\n",
+       "           fit_intercep...stic', reg_alpha=0, reg_lambda=1,\n",
+       "       scale_pos_weight=1, seed=42, silent=True, subsample=0.75))],\n",
+       "         n_jobs=1, voting='soft', weights=[3, 19, 5])"
+      ]
+     },
+     "execution_count": 563,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "Vweighted.fit(X_train,y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 553,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "pred= Vweighted.predict_proba(X_test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "score = roc_auc_score(y_test,pred[:,1])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 565,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "assert score > 0.78"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 564,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.78404063859813333"
+      ]
+     },
+     "execution_count": 564,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "anaconda-cloud": {},
+  "kernelspec": {
+   "display_name": "Python [default]",
+   "language": "python",
+   "name": "python2"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 2
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython2",
+   "version": "2.7.12"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
